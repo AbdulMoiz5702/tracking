@@ -24,35 +24,48 @@ class ProgressTrackingScreen extends StatefulWidget {
 }
 
 class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
-  int _wordsLearned = 0;
   int _quizScore = 0;
-  double _proficiencyLevel = 0.0;
+  double _proficiencyLevel = 0.0; // This could be calculated dynamically
+  List<String> _wordsLearned = []; // List to store words learned by the user
+  List<String> _selectedCategoryWords = []; // List to store words for selected category
+  int _currentWordIndex = 0;
+  TextEditingController _wordInputController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadProgressData();
+    _loadWords(); // Load words for the selected category
   }
 
   Future<void> _loadProgressData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _wordsLearned = prefs.getInt('words_learned') ?? 0;
       _quizScore = prefs.getInt('quiz_score') ?? 0;
       _proficiencyLevel = prefs.getDouble('proficiency_level') ?? 0.0;
+      _wordsLearned = prefs.getStringList('words_learned') ?? [];
     });
   }
 
   Future<void> _updateProgressData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt('words_learned', _wordsLearned);
     prefs.setInt('quiz_score', _quizScore);
     prefs.setDouble('proficiency_level', _proficiencyLevel);
+    prefs.setStringList('words_learned', _wordsLearned);
   }
 
-  void _incrementWordsLearned() {
+  Future<void> _loadWords() async {
+    // Simulate loading words for a selected category
+    // For demonstration, let's assume we have some sample words for category 'Animals'
     setState(() {
-      _wordsLearned++;
+      _selectedCategoryWords = ['Cat', 'Dog', 'Elephant', 'Lion', 'Tiger'];
+    });
+  }
+
+  void _learnWord(String word) {
+    // Add the word to the list of words learned
+    setState(() {
+      _wordsLearned.add(word);
       _updateProgressData();
     });
   }
@@ -64,9 +77,14 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
     });
   }
 
-  void _updateProficiencyLevel(double level) {
+  void _updateProficiencyLevel() {
+    // Calculate proficiency level based on quiz score and words learned
+    // For demonstration, let's calculate it as the percentage of words learned out of total words
+    double totalWords = _selectedCategoryWords.length.toDouble();
+    double learnedWords = _wordsLearned.length.toDouble();
+    double proficiencyPercentage = (learnedWords / totalWords) * 100;
     setState(() {
-      _proficiencyLevel = level;
+      _proficiencyLevel = proficiencyPercentage;
       _updateProgressData();
     });
   }
@@ -81,11 +99,27 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Words Learned: $_wordsLearned'),
+            Text('Words Learned: ${_wordsLearned.length}'),
             SizedBox(height: 20),
             Text('Quiz Score: $_quizScore'),
             SizedBox(height: 20),
-            Text('Proficiency Level: $_proficiencyLevel'),
+            Text('Proficiency Level: ${_proficiencyLevel.toStringAsFixed(2)}%'),
+            SizedBox(height: 20),
+            TextField(
+              controller: _wordInputController,
+              decoration: InputDecoration(
+                labelText: 'Enter Word to Learn',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _learnWord(_wordInputController.text); // Learn the word input by the user
+                _wordInputController.clear(); // Clear the text input field
+              },
+              child: Text('Learn Word'),
+            ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
@@ -102,6 +136,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
     );
   }
 }
+
 
 class QuizScreen extends StatefulWidget {
   final Function(int) updateQuizScore;
